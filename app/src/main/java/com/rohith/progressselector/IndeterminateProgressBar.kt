@@ -1,68 +1,76 @@
 package com.rohith.progressselector
 
-import android.content.Context
-import android.graphics.*
-import android.util.AttributeSet
-import android.view.View
-import android.os.Build
-import android.util.Log
-import android.view.MotionEvent
-import androidx.annotation.RequiresApi
-import androidx.core.content.ContextCompat
 import android.animation.PropertyValuesHolder
 import android.animation.ValueAnimator
-import android.view.animation.OvershootInterpolator
-
+import android.content.Context
+import android.graphics.*
+import android.os.Build
+import android.util.AttributeSet
+import android.util.Log
+import android.view.MotionEvent
+import android.view.View
+import androidx.annotation.RequiresApi
+import androidx.core.animation.addListener
+import androidx.core.content.ContextCompat
 
 class IndeterminateProgressBar : View {
 
     var maxValue: Int = 100
     var minValue: Int = 0
     var currentValue: Int = 0
+
     var listeners: ProgressBarListeners? = null
+
+    var shouldDraw = false
+    var shouldAnimateDrawable = false
+
     var secondRectWidth: Int = 0
+    var drawableW = 80
+
+    var drawableH = 220
+    var alphaD = 0
+
+    var drawableAnimator = ValueAnimator()
+    private var alphaValuesHolder = PropertyValuesHolder.ofInt("alpha",0,255)
+    private var widthValuesHolder = PropertyValuesHolder.ofInt("drawableW",0,80)
+    private var heightValuesHolder = PropertyValuesHolder.ofInt("drawableH",0,220)
 
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val paint1 = Paint()
     private val secondPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val thirdPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = ContextCompat.getColor(context, R.color.colorPrimary)
     }
+
     private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.WHITE
-        textSize = 20.0f
+        textSize = 40.0f
         textAlign = Paint.Align.CENTER
     }
-
     private val backgroundRect = Rect()
     private val progressRect = Rect()
     private val textRect = Rect()
 
-    val a = Point()
-    val b = Point()
-    val c = Point()
-
     var text = "0%"
-
     private val radiusHolder: PropertyValuesHolder = PropertyValuesHolder.ofFloat("radius", 150f, 5f)
+
     private val sizeHolder: PropertyValuesHolder = PropertyValuesHolder.ofFloat("size", 30f, 15f)
-
-    private val path = Path()
-
     private val roundedRect1 = RectF()
-    private val roundedRect2 = RectF()
 
+    private val roundedRect2 = RectF()
     private val valueAnimator = ValueAnimator()
 
+    private val valueAnimatorRev = ValueAnimator()
     private var radius = 5f
     var size = 15f
     var rotate = 0f
+    private val rectF = Rect()
 
     constructor(context: Context) : super(context)
 
     constructor(context: Context, attrs: AttributeSet?) : super(context, attrs)
 
     constructor(context: Context, attrs: AttributeSet?, defStyleAttr: Int) : super(context, attrs, defStyleAttr)
-
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     constructor(context: Context, attrs: AttributeSet?, defStyleAttr: Int, defStyleRes: Int) : super(
         context,
@@ -75,32 +83,27 @@ class IndeterminateProgressBar : View {
 
         super.onMeasure(widthMeasureSpec, heightMeasureSpec)
 
-        val height = 250 //calculated
+        val height = 280 //calculated
         val width = measuredWidth //parent width
 
         setMeasuredDimension(width, height)
     }
 
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     override fun onDraw(canvas: Canvas?) {
-        text = "$currentValue"
+
+        text = "00:$currentValue"
         paint.color = ContextCompat.getColor(context, R.color.colorAccent)
 
-        backgroundRect.top = height / 2
+        backgroundRect.top = height - 35
         backgroundRect.left = 40
-        backgroundRect.bottom = height / 2 + 5
+        backgroundRect.bottom = height -35 + 5
         backgroundRect.right = width - 40
 
-        progressRect.top = height / 2
+        progressRect.top = height - 35
         progressRect.left = 40
-        progressRect.bottom = height / 2 + 5
+        progressRect.bottom = height -35 + 5
         progressRect.right = if (progressWidth(width) - 40 > 40) progressWidth(width) - 40 else ++backgroundRect.left
-
-        if (currentValue == maxValue) {
-            secondPaint.color = ContextCompat.getColor(context, R.color.colorPrimary)
-            thirdPaint.color = ContextCompat.getColor(context, R.color.colorPrimaryDark)
-        } else {
-            secondPaint.color = resources.getColor(R.color.colorPrimary)
-        }
 
         textPaint.getTextBounds(text, 0, text.length, textRect)
 
@@ -110,17 +113,11 @@ class IndeterminateProgressBar : View {
             Log.e("ProgressBar", "progressRect: $progressRect")
         }
 
-        val circleY = progressRect.top + (progressRect.bottom - progressRect.top) / 2f
-
-
-
         canvas?.drawRect(backgroundRect, paint)
         canvas?.drawRect(progressRect, secondPaint)
 
-        val paint1 = Paint()
-
         paint1.strokeWidth = 1.5f
-        paint1.color = resources.getColor(R.color.colorPrimaryDark)
+        paint1.color = ContextCompat.getColor(context,R.color.colorPrimaryDark)
 
         paint1.style = Paint.Style.FILL_AND_STROKE
         paint1.isAntiAlias = true
@@ -142,65 +139,46 @@ class IndeterminateProgressBar : View {
         roundedRect2.bottom = progressRect.bottom + sizeInside - progressMiddle
 
 
-        canvas?.drawRoundRect(roundedRect1, radius, radius, thirdPaint)
         paint.color = Color.WHITE
+        canvas?.drawRoundRect(roundedRect1, radius, radius, thirdPaint)
         canvas?.drawRoundRect(roundedRect2, radius, radius, paint)
 
-        a.set(progressRect.right - 33, progressRect.top / 2 - 30)
-        b.set(progressRect.right + 33, progressRect.top / 2 - 30)
-        c.set(progressRect.right, (progressRect.top - 30))
-
-        Log.e("Triangle", "$a\n$b\n$c")
-
-        path.reset()
-
-        path.fillType = Path.FillType.EVEN_ODD
-        path.moveTo(a.x.toFloat(), a.y.toFloat())
-        path.lineTo(b.x.toFloat(), b.y.toFloat())
-        path.lineTo(c.x.toFloat(), c.y.toFloat())
-        path.lineTo(a.x.toFloat(), a.y.toFloat())
-        path.close()
-        paint.color = Color.WHITE
-
         canvas?.save()
-        canvas?.rotate(rotate, c.x.toFloat(), c.y.toFloat())
+        canvas?.rotate(rotate, progressRect.right.toFloat(), (progressRect.top - 30f))
         Log.e("rotate", "$rotate")
-        canvas?.drawPath(path, paint1)
-        canvas?.drawCircle(progressRect.right.toFloat(), progressRect.top.toFloat() / 2 - 23, 35.0f, thirdPaint)
+
+        val d = resources.getDrawable(R.drawable.balloon_drawable, null)
+
+        rectF.left = progressRect.right - drawableW
+        rectF.top = progressRect.top - drawableH
+        rectF.right = progressRect.right + drawableW
+        rectF.bottom = progressRect.top - 60
+
+        d.bounds = rectF
+
+        d.alpha = alphaD
+
+        Log.e("BalloonBounds", rectF.flattenToString())
+
+        d.draw(canvas)
+
         canvas?.drawText(
             text,
             progressRect.right.toFloat(),
-            (progressRect.top.toFloat() + 10.0f) / 2.0f - 23,
+            progressRect.top.toFloat() - 150f,
             textPaint
         )
         canvas?.restore()
 
-        if (shouldDraw) {
-
-            valueAnimator.cancel()
-
-            valueAnimator.setValues(radiusHolder, sizeHolder)
-
-            valueAnimator.duration = 1000
-
-            valueAnimator.addUpdateListener {
-                //rotate = it.getAnimatedValue("angle") as Float
-                radius = it.getAnimatedValue("radius") as Float
-                size = it.getAnimatedValue("size") as Float
-                invalidate()
-            }
-            valueAnimator.start()
+        if (currentValue == maxValue) {
+            secondPaint.color = ContextCompat.getColor(context, R.color.colorPrimary)
+            thirdPaint.color = ContextCompat.getColor(context, R.color.colorPrimaryDark)
+        } else {
+            secondPaint.color = ContextCompat.getColor(context,R.color.colorPrimary)
         }
-
-
-
 
         super.onDraw(canvas)
     }
-
-
-    var shouldDraw = false
-
 
     fun setProgress(value: Int) {
 
@@ -215,6 +193,7 @@ class IndeterminateProgressBar : View {
                 listeners?.onProgressCompleted(this)
             }
             shouldDraw = true
+           // shouldAnimateDrawable = true
             invalidate()
         }
     }
@@ -236,6 +215,34 @@ class IndeterminateProgressBar : View {
         fun onProgressCompleted(view: View?)
     }
 
+    private fun animateBalloonOnTouchDown(){
+        drawableAnimator.cancel()
+        drawableAnimator.duration = 1000
+
+        drawableAnimator.addUpdateListener {
+
+            alphaD = it.getAnimatedValue("alpha") as Int
+            drawableW = it.getAnimatedValue("drawableW")as Int
+            drawableH = it.getAnimatedValue("drawableH")as Int
+            invalidate()
+        }
+        drawableAnimator.start()
+    }
+
+    private fun animateBalloonAngle(){
+        valueAnimator.cancel()
+        valueAnimator.duration = 1000
+
+        valueAnimator.addUpdateListener {
+            rotate = it.getAnimatedValue("angle") as Float
+            radius = it.getAnimatedValue("radius") as Float
+            size = it.getAnimatedValue("size") as Float
+            invalidate()
+        }
+
+        valueAnimator.start()
+    }
+
     private var onActionDownPoint: Float = 0f
     var dx = 0f
 
@@ -248,20 +255,23 @@ class IndeterminateProgressBar : View {
 
                 onActionDownPoint = event.x
 
-                shouldDraw = true
-                dx = ((event?.rawX / backgroundRect.right) * 100f)
+                shouldDraw = false
+                //shouldAnimateDrawable = true
+                dx = ((event.rawX / backgroundRect.right) * 100f)
 
                 setProgress(dx.toInt())
-
-                // rotate = -30f
                 Log.e("TouchEventDown", "RawX -> ${event?.rawX} ${backgroundRect.right} $dx")
-                //invalidate()
+
+
+                drawableAnimator.setValues(alphaValuesHolder,widthValuesHolder,heightValuesHolder)
+
+                animateBalloonOnTouchDown()
 
                 return true
             }
 
             MotionEvent.ACTION_MOVE -> {
-                dx = (event?.rawX / backgroundRect.right) * 100f
+                dx = (event.rawX / backgroundRect.right) * 100f
 
                 setProgress(dx.toInt())
 
@@ -270,34 +280,23 @@ class IndeterminateProgressBar : View {
                 if (event.x < onActionDownPoint) {
                     rotate = 30f
                 }
+                val rotation = PropertyValuesHolder.ofFloat("angle",rotate,0f)
+                val radiusH = PropertyValuesHolder.ofFloat("radius",5f,150f)
+                val sizeH = PropertyValuesHolder.ofFloat("size",15f,30f)
 
-                /*var valueAnimator = ValueAnimator.ofFloat(-30f, 0f)
+                drawableAnimator.setValues(alphaValuesHolder,widthValuesHolder,heightValuesHolder)
 
-                Log.e("Differece", "${onActionDownPoint}  ${event.x}")
-
-                if (event.x < onActionDownPoint) {
-                    valueAnimator = ValueAnimator.ofFloat(30f, 0f)
-                }
-
-
-
-                valueAnimator.addUpdateListener {
-                    rotate = it.animatedValue as Float
-                }
-
-                valueAnimator.interpolator = OvershootInterpolator()
-                valueAnimator.startDelay = 100
-
-                valueAnimator.start()*/
-
-                invalidate()
+                valueAnimator.setValues(rotation,radiusHolder, sizeHolder)
+                animateBalloonOnTouchDown()
+                animateBalloonAngle()
 
                 return true
             }
 
             MotionEvent.ACTION_UP -> {
                 shouldDraw = false
-
+                shouldAnimateDrawable = false
+               // valueAnimator.setValues(radiusHolder, sizeHolder)
                 rotate = 0f
                 invalidate()
                 return true
