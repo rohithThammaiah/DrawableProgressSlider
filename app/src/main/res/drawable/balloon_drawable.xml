@@ -2,7 +2,24 @@
 
 <layer-list
         xmlns:android="http://schemas.android.com/apk/res/android"
-        android:shape="rectangle">
+>
+    <item android:bottom="-10dp" android:gravity="center_horizontal|bottom">
+        <rotate android:fromDegrees="45"
+                android:toDegrees="45"
+                android:pivotX="-40%"
+                android:pivotY="87%">
+            <shape android:shape="rectangle">
+                <corners
+                        android:bottomLeftRadius="15dp"
+                        android:topLeftRadius="15dp"
+                        android:topRightRadius="15dp"
+                        android:radius="105dp"/>
+                <solid android:color="@color/colorPrimaryDark"/>
+                <size android:width="8dp"
+                      android:height="8dp"/>
+            </shape>
+        </rotate>
+    </item>
     <item>
         <rotate
                 android:fromDegrees="45"
@@ -11,7 +28,7 @@
                 android:pivotY="50%">
 
 
-            <shape>
+            <shape android:shape="rectangle">
 
                 <corners
                         android:bottomRightRadius="10dp"
@@ -28,11 +45,11 @@
 
                 <!--If your shape requires only one solid color-->
                 <solid
-                        android:color="@color/colorPrimary"/>
+                        android:color="@color/colorPrimaryDark"/>
 
                 <size
-                        android:width="80dp"
-                        android:height="80dp"/>
+                        android:width="24dp"
+                        android:height="24dp"/>
 
                 <!--Use android:dashWidth="2dp" and android:dashGap="2dp"
                 to add dashes to your stroke-->
