@@ -1,72 +1,50 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<layer-list
-        xmlns:android="http://schemas.android.com/apk/res/android"
->
-    <item android:bottom="-10dp" android:gravity="center_horizontal|bottom">
-        <rotate android:fromDegrees="45"
-                android:toDegrees="45"
-                android:pivotX="-40%"
-                android:pivotY="87%">
-            <shape android:shape="rectangle">
-                <corners
-                        android:bottomLeftRadius="15dp"
-                        android:topLeftRadius="15dp"
-                        android:topRightRadius="15dp"
-                        android:radius="105dp"/>
-                <solid android:color="@color/colorPrimaryDark"/>
-                <size android:width="8dp"
-                      android:height="8dp"/>
-            </shape>
-        </rotate>
-    </item>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item>
         <rotate
                 android:fromDegrees="45"
-                android:toDegrees="45"
                 android:pivotX="50%"
-                android:pivotY="50%">
-
+                android:pivotY="50%"
+                android:toDegrees="45">
 
             <shape android:shape="rectangle">
 
                 <corners
                         android:bottomRightRadius="10dp"
-                        android:radius="40dp"/>
+                        android:radius="40dp" />
 
-                <!--<gradient
-                        android:angle="45"
-                        android:centerX="float"
-                        android:centerY="float"
-                        android:endColor="#01f1fa"
-                        android:gradientRadius="integer"
-                        android:startColor="#0189ff"
-                        android:type="linear" />-->
-
-                <!--If your shape requires only one solid color-->
                 <solid
-                        android:color="@color/colorPrimaryDark"/>
+                        android:color="@color/colorPrimaryDark" />
 
                 <size
                         android:width="24dp"
-                        android:height="24dp"/>
-
-                <!--Use android:dashWidth="2dp" and android:dashGap="2dp"
-                to add dashes to your stroke-->
-                <!--<stroke
-                        android:width="2dp"
-                        android:color="#FFFFFF"/>-->
-
-                <!--If you want to add padding-->
-                <!-- <padding
-                     android:left="10dp"
-                     android:top="20dp"
-                     android:right="40dp"
-                     android:bottom="8dp" />-->
+                        android:height="24dp" />
 
             </shape>
         </rotate>
     </item>
 
-</layer-list>
+    <item
+            android:bottom="-6dp"
+            android:gravity="center_horizontal|bottom">
+        <rotate
+                android:fromDegrees="45"
+                android:pivotX="-40%"
+                android:pivotY="87%"
+                android:toDegrees="45">
+            <shape android:shape="rectangle">
+                <corners
+                        android:bottomLeftRadius="15dp"
+                        android:radius="105dp"
+                        android:topLeftRadius="15dp"
+                        android:topRightRadius="15dp" />
+                <solid android:color="@color/colorPrimaryDark" />
+                <size
+                        android:width="4dp"
+                        android:height="4dp" />
+            </shape>
+        </rotate>
+    </item>
 
+</layer-list>

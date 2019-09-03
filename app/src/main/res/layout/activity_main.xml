@@ -12,9 +12,8 @@
     <com.rohith.progressselector.IndeterminateProgressBar
             android:layout_gravity="center_vertical"
             android:id="@+id/customProgressBar"
-            android:layout_height="wrap_content"
+            android:layout_height="100dp"
             android:layout_width="wrap_content"
     />
-
 
 </LinearLayout>
