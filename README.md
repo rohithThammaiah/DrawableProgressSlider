@@ -4,4 +4,5 @@ A progress slider inspired by Cuberto's design, you can find it here https://dri
 
 <b> Demo </b>
 
-![](demo.gif)
+![](demo/with_rotation.gif)
+![](demo/without_rotation.gif)
