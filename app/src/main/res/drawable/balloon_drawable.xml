@@ -26,7 +26,7 @@
     </item>
 
     <item
-            android:bottom="-6dp"
+            android:bottom="-10dp"
             android:gravity="center_horizontal|bottom">
         <rotate
                 android:fromDegrees="45"
@@ -41,8 +41,8 @@
                         android:topRightRadius="15dp" />
                 <solid android:color="@color/colorPrimaryDark" />
                 <size
-                        android:width="4dp"
-                        android:height="4dp" />
+                        android:width="8dp"
+                        android:height="8dp" />
             </shape>
         </rotate>
     </item>

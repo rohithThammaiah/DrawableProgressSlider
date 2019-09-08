@@ -12,8 +12,11 @@ import android.util.AttributeSet
 import android.util.Log
 import android.view.MotionEvent
 import android.view.View
+import android.view.ViewConfiguration
+import android.view.animation.DecelerateInterpolator
 import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
+import kotlin.math.abs
 
 
 class IndeterminateProgressBar : View {
@@ -24,21 +27,52 @@ class IndeterminateProgressBar : View {
 
     var listeners: ProgressBarListeners? = null
 
-    private var shouldDraw = false
+    private val textRect = Rect()
+    private val drawableRect = Rect()
+    private val progressRect = Rect()
+    private val innerRoundedRect = RectF()
+    private val outerRoundedRect = RectF()
+    private val progressBackgroundRect = Rect()
 
+    private var dx = 0f
+    private var text = "0%"
+    private var size = 15f
+    private var diffX = 0f
+    private var downX = 0f
+    private var downY = 0f
+    private var radius = 5f
+    private var isMoving = false
+    private var drawableW = 0
+    private var drawableH = 0
+    private var shouldDraw = false
+    private var scaleValue = 0
+    private val assignedMargins = 40
+    private var rotateBalloonBy = 0f
+    private var progressBarStart: Int = 0
+    private var progressBarHeight: Int = 0
+
+    private val touchSlop = ViewConfiguration.get(context).scaledTouchSlop
+
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
+    private val balloonDrawable: Drawable = resources.getDrawable(R.drawable.balloon_drawable, null)
+
+    private val testAnimator = ValueAnimator()
     private val valueAnimator = ValueAnimator()
-    private var drawableAnimator = ValueAnimator()
+    private val drawableAnimator = ValueAnimator()
     private val rotationAnimator = ValueAnimator()
 
-    private var widthValuesHolder = PropertyValuesHolder.ofInt("drawableW", 0, 60)
-    private var reverseWidthValuesHolder = PropertyValuesHolder.ofInt("drawableW", 60, 0)
-    private var heightValuesHolder = PropertyValuesHolder.ofInt("drawableH", 20, 180)
-    private var reverseHeightValuesHolder = PropertyValuesHolder.ofInt("drawableH", 180, 20)
-    private var hopeThisWorksHolder = PropertyValuesHolder.ofInt("hopeThisWorks", 0, 60)
-    private var reverseThisWorksHolder = PropertyValuesHolder.ofInt("hopeThisWorks", 60, 0)
-
-    private var rotationAngleLTRHolder = PropertyValuesHolder.ofFloat("rotationAngle", -16f, 0f)
-    private var rotationAngleRTLHolder = PropertyValuesHolder.ofFloat("rotationAngle", 16f, 0f)
+    private val widthValuesHolder = PropertyValuesHolder.ofInt("drawableW", 0, 60)
+    private val reverseWidthValuesHolder = PropertyValuesHolder.ofInt("drawableW", 60, 0)
+    private val heightValuesHolder = PropertyValuesHolder.ofInt("drawableH", 20, 180)
+    private val reverseHeightValuesHolder = PropertyValuesHolder.ofInt("drawableH", 180, 20)
+    private val scaleValueHolder = PropertyValuesHolder.ofInt("scaleValue", 0, 60)
+    private val reverseScaleValueHolder = PropertyValuesHolder.ofInt("scaleValue", 60, 0)
+    private val rotationAngleLTRHolder = PropertyValuesHolder.ofFloat("rotationAngle", -8f, 0f)
+    private val rotationAngleRTLHolder = PropertyValuesHolder.ofFloat("rotationAngle", 8f, 0f)
+    private val radiusHolder = PropertyValuesHolder.ofFloat("radius", 150f, 5f)
+    private val reverseRadiusHolder = PropertyValuesHolder.ofFloat("radius", 5f, 150f)
+    private val sizeHolder= PropertyValuesHolder.ofFloat("size", 30f, 15f)
+    private val reverseSizeHolder = PropertyValuesHolder.ofFloat("size", 15f, 30f)
 
     private val innerRectPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.WHITE
@@ -57,43 +91,6 @@ class IndeterminateProgressBar : View {
         textAlign = Paint.Align.CENTER
 
     }
-
-    private val progressBackgroundRect = Rect()
-    private val progressRect = Rect()
-    private val textRect = Rect()
-    private val outerRoundedRect = RectF()
-    private val innerRoundedRect = RectF()
-    private val rectF = Rect()
-
-    private var text = "0%"
-
-    private val radiusHolder: PropertyValuesHolder =
-        PropertyValuesHolder.ofFloat("radius", 150f, 5f)
-    private val sizeHolder: PropertyValuesHolder = PropertyValuesHolder.ofFloat("size", 30f, 15f)
-
-    private var radius = 5f
-    private var size = 15f
-
-    private var drawableW = 0
-    private var drawableH = 0
-
-    private var rotateBalloonBy = 0f
-
-    private var progressBarStart: Int = 0
-    private var progressBarHeight: Int = 0
-
-    private var hopeThisWorks = 0
-
-    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
-    private val balloonDrawable: Drawable = resources.getDrawable(R.drawable.balloon_drawable, null)
-
-    private var downX: Float = 0f
-    private var downY: Float = 0f
-    private var dx = 0f
-
-    private var isMoving = false
-
-    private val assignedMargins = 40
 
     constructor(context: Context) : super(context)
 
@@ -118,14 +115,14 @@ class IndeterminateProgressBar : View {
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     override fun onDraw(canvas: Canvas?) {
 
-        progressBarStart = height - 35
-        progressBarHeight = progressBarStart + 5
+        progressBarStart = height - 35 // TODO rename
+        progressBarHeight = progressBarStart + 5 // height of progress bar TODO rename
 
         text = "${currentValue.toInt()}"
 
         progressBackgroundRect.left = assignedMargins
-        progressBackgroundRect.right = width - assignedMargins
         progressBackgroundRect.top = progressBarStart
+        progressBackgroundRect.right = width - assignedMargins
         progressBackgroundRect.bottom = progressBarHeight
 
         progressRect.left = assignedMargins
@@ -161,22 +158,23 @@ class IndeterminateProgressBar : View {
         canvas?.drawRoundRect(outerRoundedRect, radius, radius, outerRectPaint)
         canvas?.drawRoundRect(innerRoundedRect, radius, radius, innerRectPaint)
 
+        drawableRect.left = progressRect.right - drawableW
+        drawableRect.right = progressRect.right + drawableW
+        drawableRect.bottom = progressRect.top - scaleValue
+        drawableRect.top = progressRect.top - drawableH
+
         if (isMoving) {
             canvas?.save()
-            canvas?.rotate(rotateBalloonBy, progressRect.right.toFloat(), (progressRect.top - 30f))
+            canvas?.rotate(rotateBalloonBy, drawableRect.left.toFloat(),drawableRect.bottom.toFloat())
         }
-        rectF.left = progressRect.right - drawableW
-        rectF.right = progressRect.right + drawableW
-        rectF.bottom = progressRect.top - hopeThisWorks
-        rectF.top = progressRect.top - drawableH
 
         val layerList = balloonDrawable as? LayerDrawable
-        layerList?.bounds = rectF
+        layerList?.bounds = drawableRect
 
 
         //canvas?.restore()
 
-        if (drawableH < 30 || drawableW < 20/* && rectF.left == progressRect.right */) {
+        if (drawableH < 30 || drawableW < 20/* && drawableRect.left == progressRect.right */) {
             layerList?.alpha = 0
         } else {
             if (canvas != null)
@@ -185,7 +183,7 @@ class IndeterminateProgressBar : View {
             canvas?.drawText(
                 text,
                 progressRect.right.toFloat(),
-                rectF.top + ((rectF.bottom - rectF.top) / 2f) + 12f,
+                drawableRect.top + ((drawableRect.bottom - drawableRect.top) / 2f) + 8f,
                 textPaint
             )
         }
@@ -212,7 +210,7 @@ class IndeterminateProgressBar : View {
                 downY = event.y
 
                 shouldDraw = false
-                dx = ((event.rawX / progressBackgroundRect.right))
+                dx = (downX / (progressBackgroundRect.right - (assignedMargins+5)))
                 val progress = (dx * maxValue)
 
                 if (progress <= 100)
@@ -220,13 +218,11 @@ class IndeterminateProgressBar : View {
                 else
                     setProgress(100f)
 
-                val a = PropertyValuesHolder.ofFloat("radius", 5f, 150f)
-                val b = PropertyValuesHolder.ofFloat("size", 15f, 30f)
-                valueAnimator.setValues(a, b)
+                valueAnimator.setValues(reverseRadiusHolder, reverseSizeHolder)
                 drawableAnimator.setValues(
                     widthValuesHolder,
                     heightValuesHolder,
-                    hopeThisWorksHolder
+                    scaleValueHolder
                 )
 
                 isMoving = false
@@ -239,73 +235,72 @@ class IndeterminateProgressBar : View {
             MotionEvent.ACTION_MOVE -> {
                 isMoving = true
                 dx = (event.rawX / progressBackgroundRect.right)
+                diffX = event.rawX - downX
 
-                val currentX = event.x
-                val currentY = event.y
+                Log.e("diffX", "$diffX - $touchSlop")
 
-                if (Math.abs(downX - currentX) > Math.abs(
-                        downY - currentY
-                    )
-                ) {
-                    Log.v("", "x")
-                    // going backwards: pushing stuff to the right
-                    if (downX < currentX) {
-                        Log.v("", "right")
-                        rotationAnimator.setValues(rotationAngleLTRHolder)
-                        rotateBalloonBy = -16f
+                if (abs(diffX) > touchSlop) {
+
+                    val currentX = event.x
+                    val currentY = event.y
+
+                    if (abs(downX - currentX) > abs(downY - currentY)) {
+                        if (downX < currentX) { // scrolling right
+                            rotationAnimator.setValues(rotationAngleLTRHolder)
+                           // rotateBalloonBy = -8f // balloon rotated to the left
+                        }
+
+                        if (downX > currentX) { // scrolling left
+                            rotationAnimator.setValues(rotationAngleRTLHolder)
+                           // rotateBalloonBy = 8f// balloon rotated to the right
+                        }
+
                         downX = currentX
                     }
 
-                    // going forwards: pushing stuff to the left
-                    if (downX > currentX) {
-                        Log.v("", "left")
-                        rotationAnimator.setValues(rotationAngleRTLHolder)
-                        rotateBalloonBy = 16f
-                        downX = currentX
-                    }
-
-                } else {
-                    Log.v("", "y ")
-
-                    if (downY < currentY) {
-                        Log.v("", "down")
-
-                    }
-                    if (downY > currentY) {
-                        Log.v("", "up")
-
-                    }
+                    val progress = (dx * maxValue)
+                    if (progress <= 100)
+                        setProgress(progress)
+                    else
+                        setProgress(100f)
                 }
-
-                val progress = (dx * maxValue)
-                if (progress <= 100)
-                    setProgress(progress)
-                else
-                    setProgress(100f)
 
                 return true
             }
 
             MotionEvent.ACTION_UP -> {
-                //isMoving = false
                 shouldDraw = false
                 valueAnimator.setValues(radiusHolder, sizeHolder)
                 animateRoundedRect()
                 if (isMoving) {
-                    drawableAnimator.setValues(
-                        reverseWidthValuesHolder,
-                        reverseHeightValuesHolder,
-                        reverseThisWorksHolder
-                    )
-                    animateBalloonOnTouchDown(true)
-
-                    rotationAnimator.duration = 300
-
+                    /*rotationAnimator.duration = 600
+                    rotationAnimator.interpolator = DecelerateInterpolator()
                     rotationAnimator.addUpdateListener {
                         rotateBalloonBy = it.getAnimatedValue("rotationAngle") as Float
                         invalidate()
                     }
-                    rotationAnimator.start()
+                    rotationAnimator.doOnEnd {
+                        // animateBalloonOnTouchDown(500)
+
+                    }
+                    rotationAnimator?.start()*/
+                    drawableAnimator.reverse()
+                } else {
+                    testAnimator.setValues(
+                        reverseWidthValuesHolder,
+                        reverseHeightValuesHolder,
+                        reverseScaleValueHolder
+                    )
+                    testAnimator.addUpdateListener {
+                        drawableW = it.getAnimatedValue("drawableW") as Int
+                        drawableH = it.getAnimatedValue("drawableH") as Int
+                        scaleValue = it.getAnimatedValue("scaleValue") as Int
+                        invalidate()
+                    }
+                    testAnimator.duration = 1000
+                    testAnimator.interpolator = DecelerateInterpolator()
+                    testAnimator.startDelay = 1900
+                    testAnimator.start()
                 }
                 return true
             }
@@ -314,18 +309,18 @@ class IndeterminateProgressBar : View {
         }
     }
 
-
-    private fun animateBalloonOnTouchDown(delayed: Boolean = false) {
+    private fun animateBalloonOnTouchDown(delay: Int = 0) {
 
         drawableAnimator.duration = 800
 
         drawableAnimator.addUpdateListener {
             drawableW = it.getAnimatedValue("drawableW") as Int
             drawableH = it.getAnimatedValue("drawableH") as Int
-            hopeThisWorks = it.getAnimatedValue("hopeThisWorks") as Int
+            scaleValue = it.getAnimatedValue("scaleValue") as Int
             invalidate()
         }
-        if (delayed) drawableAnimator.startDelay = 800 else drawableAnimator.startDelay = 0
+        drawableAnimator.startDelay = delay.toLong()
+
         drawableAnimator.start()
     }
 
@@ -342,7 +337,9 @@ class IndeterminateProgressBar : View {
         valueAnimator.start()
     }
 
-    private fun setProgress(value: Float) {
+    private fun setProgress(value1: Float) {
+
+        val value = abs(value1)
 
         if (value in minValue..maxValue) {
             if (value == minValue) {
