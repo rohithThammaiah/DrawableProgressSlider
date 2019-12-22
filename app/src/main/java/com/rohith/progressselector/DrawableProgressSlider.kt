@@ -6,7 +6,6 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.*
 import android.graphics.drawable.Drawable
-import android.graphics.drawable.LayerDrawable
 import android.os.Build
 import android.util.AttributeSet
 import android.util.Log
@@ -14,12 +13,13 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewConfiguration
 import android.view.animation.DecelerateInterpolator
+import androidx.annotation.DrawableRes
 import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import kotlin.math.abs
 
 
-class IndeterminateProgressBar : View {
+class DrawableProgressSlider : View {
 
     private var minValue: Float = 0f
     private var maxValue: Float = 100f
@@ -53,8 +53,7 @@ class IndeterminateProgressBar : View {
 
     private val touchSlop = ViewConfiguration.get(context).scaledTouchSlop
 
-    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
-    private val balloonDrawable: Drawable = resources.getDrawable(R.drawable.balloon_drawable, null)
+    private var drawable: Drawable? = ContextCompat.getDrawable(context,R.drawable.balloon_drawable)
 
     private val testAnimator = ValueAnimator()
     private val valueAnimator = ValueAnimator()
@@ -71,7 +70,7 @@ class IndeterminateProgressBar : View {
     private val rotationAngleRTLHolder = PropertyValuesHolder.ofFloat("rotationAngle", 8f, 0f)
     private val radiusHolder = PropertyValuesHolder.ofFloat("radius", 150f, 5f)
     private val reverseRadiusHolder = PropertyValuesHolder.ofFloat("radius", 5f, 150f)
-    private val sizeHolder= PropertyValuesHolder.ofFloat("size", 30f, 15f)
+    private val sizeHolder = PropertyValuesHolder.ofFloat("size", 30f, 15f)
     private val reverseSizeHolder = PropertyValuesHolder.ofFloat("size", 15f, 30f)
 
     private val innerRectPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -165,10 +164,14 @@ class IndeterminateProgressBar : View {
 
         if (isMoving) {
             canvas?.save()
-            canvas?.rotate(rotateBalloonBy, drawableRect.left.toFloat(),drawableRect.bottom.toFloat())
+            canvas?.rotate(
+                rotateBalloonBy,
+                drawableRect.left.toFloat(),
+                drawableRect.bottom.toFloat()
+            )
         }
 
-        val layerList = balloonDrawable as? LayerDrawable
+        val layerList = drawable
         layerList?.bounds = drawableRect
 
 
@@ -178,7 +181,7 @@ class IndeterminateProgressBar : View {
             layerList?.alpha = 0
         } else {
             if (canvas != null)
-                balloonDrawable.draw(canvas)
+                drawable?.draw(canvas) ?: throw IllegalStateException("drawable is null")
             layerList?.alpha = 255
             canvas?.drawText(
                 text,
@@ -210,7 +213,7 @@ class IndeterminateProgressBar : View {
                 downY = event.y
 
                 shouldDraw = false
-                dx = (downX / (progressBackgroundRect.right - (assignedMargins+5)))
+                dx = (downX / (progressBackgroundRect.right - (assignedMargins + 5)))
                 val progress = (dx * maxValue)
 
                 if (progress <= 100)
@@ -247,12 +250,12 @@ class IndeterminateProgressBar : View {
                     if (abs(downX - currentX) > abs(downY - currentY)) {
                         if (downX < currentX) { // scrolling right
                             rotationAnimator.setValues(rotationAngleLTRHolder)
-                           // rotateBalloonBy = -8f // balloon rotated to the left
+                            // rotateBalloonBy = -8f // balloon rotated to the left
                         }
 
                         if (downX > currentX) { // scrolling left
                             rotationAnimator.setValues(rotationAngleRTLHolder)
-                           // rotateBalloonBy = 8f// balloon rotated to the right
+                            // rotateBalloonBy = 8f// balloon rotated to the right
                         }
 
                         downX = currentX
@@ -364,6 +367,12 @@ class IndeterminateProgressBar : View {
         val calc = (currentValue * maxWidth) / maxValue
         return calc.toInt()
     }
+
+    fun setDrawable(@DrawableRes _drawable: Int = R.drawable.balloon_drawable) {
+        drawable = ContextCompat.getDrawable(context,_drawable) ?: throw java.lang.IllegalArgumentException("drawable not found")
+        invalidate()
+    }
+
 
     interface ProgressBarListeners {
 
