@@ -9,7 +9,7 @@
         android:layout_gravity="center_vertical"
         android:gravity="center_vertical">
 
-    <com.rohith.progressselector.IndeterminateProgressBar
+    <com.rohith.progressselector.DrawableProgressSlider
             android:layout_gravity="center_vertical"
             android:id="@+id/customProgressBar"
             android:layout_height="200dp"
