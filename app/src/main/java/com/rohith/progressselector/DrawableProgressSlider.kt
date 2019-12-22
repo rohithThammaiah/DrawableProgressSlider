@@ -18,7 +18,6 @@ import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import kotlin.math.abs
 
-
 class DrawableProgressSlider : View {
 
     private var minValue: Float = 0f
@@ -53,7 +52,7 @@ class DrawableProgressSlider : View {
 
     private val touchSlop = ViewConfiguration.get(context).scaledTouchSlop
 
-    private var drawable: Drawable? = ContextCompat.getDrawable(context,R.drawable.balloon_drawable)
+    private var drawable: Drawable? = ContextCompat.getDrawable(context,R.drawable.ic_balloon)
 
     private val testAnimator = ValueAnimator()
     private val valueAnimator = ValueAnimator()
@@ -133,6 +132,8 @@ class DrawableProgressSlider : View {
         progressRect.top = progressBarStart
         progressRect.bottom = progressBarHeight
 
+        textPaint.textSize = abs((drawable?.bounds?.width()?: 0 ) + (drawable?.bounds?.height()?: 0)) / 8f
+
         textPaint.getTextBounds(text, 0, text.length, textRect)
 
         canvas?.drawRect(progressBackgroundRect, progressBackgroundPaint)
@@ -186,7 +187,7 @@ class DrawableProgressSlider : View {
             canvas?.drawText(
                 text,
                 progressRect.right.toFloat(),
-                drawableRect.top + ((drawableRect.bottom - drawableRect.top) / 2f) + 8f,
+                drawableRect.top + ((drawableRect.bottom - drawableRect.top) / 2f) + 10f,
                 textPaint
             )
         }
@@ -368,7 +369,7 @@ class DrawableProgressSlider : View {
         return calc.toInt()
     }
 
-    fun setDrawable(@DrawableRes _drawable: Int = R.drawable.balloon_drawable) {
+    fun setDrawable(@DrawableRes _drawable: Int = R.drawable.ic_balloon) {
         drawable = ContextCompat.getDrawable(context,_drawable) ?: throw java.lang.IllegalArgumentException("drawable not found")
         invalidate()
     }
