@@ -6,7 +6,6 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.*
 import android.graphics.drawable.Drawable
-import android.os.Build
 import android.util.AttributeSet
 import android.util.Log
 import android.view.MotionEvent
@@ -14,7 +13,6 @@ import android.view.View
 import android.view.ViewConfiguration
 import android.view.animation.DecelerateInterpolator
 import androidx.annotation.DrawableRes
-import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import kotlin.math.abs
 
@@ -104,7 +102,6 @@ class DrawableProgressSlider @JvmOverloads constructor(
         setMeasuredDimension(width, height)
     }
 
-    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     override fun onDraw(canvas: Canvas?) {
 
         progressBarStart = height - 35 // TODO rename
@@ -112,51 +109,61 @@ class DrawableProgressSlider @JvmOverloads constructor(
 
         text = "${currentValue.toInt()}"
 
-        progressBackgroundRect.left = assignedMargins
-        progressBackgroundRect.top = progressBarStart
-        progressBackgroundRect.right = width - assignedMargins
-        progressBackgroundRect.bottom = progressBarHeight
+        progressBackgroundRect.apply {
+            left = assignedMargins
+            top = progressBarStart
+            right = width - assignedMargins
+            bottom = progressBarHeight
+        }
 
-        progressRect.left = assignedMargins
-        progressRect.right =
-            if (progressWidth(width - assignedMargins) >= assignedMargins)
+        progressRect.apply {
+            left = assignedMargins
+            right = if (progressWidth(width - assignedMargins) >= assignedMargins)
                 progressWidth(width - assignedMargins)
             else
                 assignedMargins
-        progressRect.top = progressBarStart
-        progressRect.bottom = progressBarHeight
+            top = progressBarStart
+            bottom = progressBarHeight
+        }
 
-        textPaint.textSize =
-            abs((drawable?.bounds?.width() ?: 0) + (drawable?.bounds?.height() ?: 0)) / 8f
-
-        textPaint.getTextBounds(text, 0, text.length, textRect)
-
-        canvas?.drawRect(progressBackgroundRect, progressBackgroundPaint)
-        canvas?.drawRect(progressRect, outerRectPaint)
+        textPaint.apply {
+            textSize =
+                abs((drawable?.bounds?.width() ?: 0) + (drawable?.bounds?.height() ?: 0)) / 8f
+            getTextBounds(text, 0, text.length, textRect)
+        }
 
         val progressMiddle = (progressRect.bottom - progressRect.top) / 2
 
-        outerRoundedRect.left = progressRect.right - size
-        outerRoundedRect.right = progressRect.right + size
-        outerRoundedRect.top = progressRect.top - size + progressMiddle
-        outerRoundedRect.bottom = progressRect.bottom + size - progressMiddle
+        outerRoundedRect.apply {
+            left = progressRect.right - size
+            right = progressRect.right + size
+            top = progressRect.top - size + progressMiddle
+            bottom = progressRect.bottom + size - progressMiddle
+        }
 
         var sizeInside = size / 2
         if (shouldDraw)
             sizeInside = size - 3f
 
-        innerRoundedRect.left = progressRect.right - sizeInside
-        innerRoundedRect.right = progressRect.right + sizeInside
-        innerRoundedRect.top = progressRect.top - sizeInside + progressMiddle
-        innerRoundedRect.bottom = progressRect.bottom + sizeInside - progressMiddle
+        innerRoundedRect.apply {
+            left = progressRect.right - sizeInside
+            right = progressRect.right + sizeInside
+            innerRoundedRect.top = progressRect.top - sizeInside + progressMiddle
+            innerRoundedRect.bottom = progressRect.bottom + sizeInside - progressMiddle
+        }
+
+        drawableRect.apply {
+            drawableRect.left = progressRect.right - drawableW
+            drawableRect.right = progressRect.right + drawableW
+            drawableRect.bottom = progressRect.top - scaleValue
+            drawableRect.top = progressRect.top - drawableH
+        }
+
+        canvas?.drawRect(progressBackgroundRect, progressBackgroundPaint)
+        canvas?.drawRect(progressRect, outerRectPaint)
 
         canvas?.drawRoundRect(outerRoundedRect, radius, radius, outerRectPaint)
         canvas?.drawRoundRect(innerRoundedRect, radius, radius, innerRectPaint)
-
-        drawableRect.left = progressRect.right - drawableW
-        drawableRect.right = progressRect.right + drawableW
-        drawableRect.bottom = progressRect.top - scaleValue
-        drawableRect.top = progressRect.top - drawableH
 
         if (isMoving) {
             canvas?.save()
@@ -167,18 +174,14 @@ class DrawableProgressSlider @JvmOverloads constructor(
             )
         }
 
-        val layerList = drawable
-        layerList?.bounds = drawableRect
-
-
-        //canvas?.restore()
+        drawable?.bounds = drawableRect
 
         if (drawableH < 30 || drawableW < 20/* && drawableRect.left == progressRect.right */) {
-            layerList?.alpha = 0
+            drawable?.alpha = 0
         } else {
             if (canvas != null)
                 drawable?.draw(canvas) ?: throw IllegalStateException("drawable is null")
-            layerList?.alpha = 255
+            drawable?.alpha = 255
             canvas?.drawText(
                 text,
                 progressRect.right.toFloat(),
@@ -194,7 +197,6 @@ class DrawableProgressSlider @JvmOverloads constructor(
 
     override fun performClick(): Boolean {
         super.performClick()
-
         return true
     }
 
