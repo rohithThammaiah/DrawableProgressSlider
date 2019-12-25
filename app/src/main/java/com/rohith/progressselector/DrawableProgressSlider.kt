@@ -18,7 +18,11 @@ import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import kotlin.math.abs
 
-class DrawableProgressSlider : View {
+class DrawableProgressSlider @JvmOverloads constructor(
+    context: Context,
+    attrs: AttributeSet? = null,
+    defStyleAttr: Int = 0
+) : View(context, attrs, defStyleAttr) {
 
     private var minValue: Float = 0f
     private var maxValue: Float = 100f
@@ -52,7 +56,7 @@ class DrawableProgressSlider : View {
 
     private val touchSlop = ViewConfiguration.get(context).scaledTouchSlop
 
-    private var drawable: Drawable? = ContextCompat.getDrawable(context,R.drawable.ic_balloon)
+    private var drawable: Drawable? = ContextCompat.getDrawable(context, R.drawable.ic_balloon)
 
     private val testAnimator = ValueAnimator()
     private val valueAnimator = ValueAnimator()
@@ -90,16 +94,6 @@ class DrawableProgressSlider : View {
 
     }
 
-    constructor(context: Context) : super(context)
-
-    constructor(context: Context, attrs: AttributeSet?) : super(context, attrs)
-
-    constructor(context: Context, attrs: AttributeSet?, defStyleAttr: Int) : super(
-        context,
-        attrs,
-        defStyleAttr
-    )
-
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
 
         super.onMeasure(widthMeasureSpec, heightMeasureSpec)
@@ -132,7 +126,8 @@ class DrawableProgressSlider : View {
         progressRect.top = progressBarStart
         progressRect.bottom = progressBarHeight
 
-        textPaint.textSize = abs((drawable?.bounds?.width()?: 0 ) + (drawable?.bounds?.height()?: 0)) / 8f
+        textPaint.textSize =
+            abs((drawable?.bounds?.width() ?: 0) + (drawable?.bounds?.height() ?: 0)) / 8f
 
         textPaint.getTextBounds(text, 0, text.length, textRect)
 
@@ -370,7 +365,8 @@ class DrawableProgressSlider : View {
     }
 
     fun setDrawable(@DrawableRes _drawable: Int = R.drawable.ic_balloon) {
-        drawable = ContextCompat.getDrawable(context,_drawable) ?: throw java.lang.IllegalArgumentException("drawable not found")
+        drawable = ContextCompat.getDrawable(context, _drawable)
+            ?: throw java.lang.IllegalArgumentException("drawable not found")
         invalidate()
     }
 
