@@ -30,10 +30,12 @@ class DrawableProgressSlider @JvmOverloads constructor(
 
     private val textRect = Rect()
     private val drawableRect = Rect()
+
     private val progressRect = Rect()
+    private val progressBackgroundRect = Rect()
+
     private val innerRoundedRect = RectF()
     private val outerRoundedRect = RectF()
-    private val progressBackgroundRect = Rect()
 
     private var dx = 0f
     private var text = "0%"
@@ -176,7 +178,7 @@ class DrawableProgressSlider @JvmOverloads constructor(
 
         drawable?.bounds = drawableRect
 
-        if (drawableH < 30 || drawableW < 20/* && drawableRect.left == progressRect.right */) {
+        if (drawableH < 30 || drawableW < 20) {
             drawable?.alpha = 0
         } else {
             if (canvas != null)
